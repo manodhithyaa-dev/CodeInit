@@ -15,9 +15,12 @@ export default function Medications() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [medsRes, summaryRes] = await Promise.all([getMedications(), getMedicationSummary()]);
+      const medsRes = await getMedications();
       setMedications(medsRes.data);
+      const summaryRes = await getMedicationSummary();
       setSummary(summaryRes.data);
+    } catch (err: any) {
+      console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
     }
@@ -39,9 +42,12 @@ export default function Medications() {
       });
       setShowForm(false);
       setFormData({ name: '', dosage: '', frequency_per_day: 1, reminder_time: '' });
-      fetchData();
-    } catch (err) {
-      console.error(err);
+      setMedications([]);
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error creating medication:', err);
+      const msg = err?.response?.data?.detail || err?.message || 'Failed to create medication';
+      alert(msg);
     } finally {
       setSubmitting(false);
     }
@@ -51,20 +57,28 @@ export default function Medications() {
     if (!confirm('Delete this medication?')) return;
     try {
       await deleteMedication(id);
-      fetchData();
-    } catch (err) {
-      console.error(err);
+      setMedications(medications.filter(m => m.id !== id));
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error deleting medication:', err);
+      const msg = err?.response?.data?.detail || err?.message || 'Failed to delete medication';
+      alert(msg);
     }
   };
 
   const handleMarkTaken = async (id: number) => {
     const today = new Date().toISOString().split('T')[0];
+    console.log('Marking medication:', id, 'as taken on', today);
     try {
-      await markMedicationTaken(id, { taken_date: today, taken: true });
-      fetchData();
+      const result = await markMedicationTaken(id, { taken_date: today, taken: true });
+      console.log('Mark taken result:', result);
+      await fetchData();
       alert('Marked as taken!');
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('Error marking medication:', err);
+      console.error('Error response:', err.response);
+      const msg = err?.response?.data?.detail || err?.response?.data || err?.message || 'Failed to mark medication';
+      alert(msg);
     }
   };
 
@@ -77,7 +91,6 @@ export default function Medications() {
         </button>
       </div>
 
-      {/* Summary Cards */}
       <div className="stats-grid mb-6">
         <div className="stat-card">
           <div className="stat-value">{summary?.current_streak || 0}</div>
@@ -89,7 +102,6 @@ export default function Medications() {
         </div>
       </div>
 
-      {/* Add Form */}
       {showForm && (
         <div className="card mb-6">
           <h2 className="title">Add Medication</h2>
@@ -144,7 +156,6 @@ export default function Medications() {
         </div>
       )}
 
-      {/* Medications List */}
       {loading ? (
         <div className="loading">Loading...</div>
       ) : medications.length === 0 ? (

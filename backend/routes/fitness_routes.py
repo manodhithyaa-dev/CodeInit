@@ -21,20 +21,6 @@ def create_fitness_log(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    existing = db.query(FitnessLog).filter(
-        FitnessLog.user_id == current_user.id,
-        FitnessLog.log_date == fitness.log_date
-    ).first()
-    
-    if existing:
-        existing.activity_completed = fitness.activity_completed
-        existing.steps = fitness.steps
-        existing.minutes_exercised = fitness.minutes_exercised
-        existing.intensity = Intensity[fitness.intensity.value]
-        db.commit()
-        db.refresh(existing)
-        return existing
-    
     db_fitness = FitnessLog(
         user_id=current_user.id,
         log_date=fitness.log_date,
@@ -155,7 +141,10 @@ def get_weekly_fitness(
     
     total_steps = sum(log.steps for log in logs)
     total_minutes = sum(log.minutes_exercised for log in logs)
-    days_active = sum(1 for log in logs if log.activity_completed)
+    
+    unique_dates = set(log.log_date for log in logs)
+    days_with_completion = set(log.log_date for log in logs if log.activity_completed)
+    days_active = len(days_with_completion)
     
     intensity_map = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
     avg_intensity_val = sum(intensity_map.get(log.intensity.value, 1) for log in logs) / len(logs)
@@ -164,13 +153,13 @@ def get_weekly_fitness(
     streak = 0
     check_date = today
     while True:
-        day_log = db.query(FitnessLog).filter(
+        has_activity = db.query(FitnessLog).filter(
             FitnessLog.user_id == current_user.id,
             FitnessLog.log_date == check_date,
             FitnessLog.activity_completed == True
-        ).first()
+        ).first() is not None
         
-        if day_log:
+        if has_activity:
             streak += 1
             check_date -= timedelta(days=1)
         else:

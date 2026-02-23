@@ -153,6 +153,23 @@ def mark_medication_taken(
     db.commit()
     return {"message": "Updated successfully"}
 
+@router.get("/logs")
+def get_medication_logs(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(MedicationLog).filter(MedicationLog.user_id == current_user.id)
+    
+    if start_date:
+        query = query.filter(MedicationLog.taken_date >= start_date)
+    if end_date:
+        query = query.filter(MedicationLog.taken_date <= end_date)
+    
+    logs = query.order_by(MedicationLog.taken_date.desc()).all()
+    return logs
+
 @router.get("/summary", response_model=MedicationSummaryResponse)
 def get_medication_summary(
     db: Session = Depends(get_db),
