@@ -1,16 +1,30 @@
 from pydantic import BaseModel, EmailStr
-
+from datetime import datetime
+from typing import Optional
+import enum
+class PrimaryGoal(str, enum.Enum):
+    MOOD = "MOOD"
+    MEDICATION = "MEDICATION"
+    FITNESS = "FITNESS"
+    STRESS = "STRESS"
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
-
+    name: str
+    age_range: str
+    primary_goal: PrimaryGoal
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
-
 class UserResponse(BaseModel):
     id: int
-    email: EmailStr
-
+    email: str
+    name: str
+    age_range: Optional[str] = None
+    primary_goal: PrimaryGoal
+    created_at: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
+class TokenResponse(BaseModel):
+    token: str
+    user: UserResponse
