@@ -15,9 +15,13 @@ export default function Medications() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      console.log('Fetching medications...');
       const medsRes = await getMedications();
+      console.log('Medications:', medsRes.data);
       setMedications(medsRes.data);
+      console.log('Fetching summary...');
       const summaryRes = await getMedicationSummary();
+      console.log('Summary:', summaryRes.data);
       setSummary(summaryRes.data);
     } catch (err: any) {
       console.error('Error fetching data:', err);
@@ -73,7 +77,6 @@ export default function Medications() {
       const result = await markMedicationTaken(id, { taken_date: today, taken: true });
       console.log('Mark taken result:', result);
       await fetchData();
-      alert('Marked as taken!');
     } catch (err: any) {
       console.error('Error marking medication:', err);
       console.error('Error response:', err.response);

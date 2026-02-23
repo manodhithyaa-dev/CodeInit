@@ -119,7 +119,7 @@ def delete_fitness_log(
     
     return {"message": "Fitness log deleted successfully"}
 
-@router.get("/weekly", response_model=WeeklyFitnessResponse)
+@router.get("/weekly")
 def get_weekly_fitness(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -134,10 +134,10 @@ def get_weekly_fitness(
     ).all()
     
     if not logs:
-        return WeeklyFitnessResponse(
-            total_steps=0, total_minutes=0, 
-            avg_intensity="LOW", days_active=0, current_streak=0
-        )
+        return {
+            "total_steps": 0, "total_minutes": 0,
+            "avg_intensity": "LOW", "days_active": 0, "current_streak": 0
+        }
     
     total_steps = sum(log.steps for log in logs)
     total_minutes = sum(log.minutes_exercised for log in logs)
@@ -165,13 +165,13 @@ def get_weekly_fitness(
         else:
             break
     
-    return WeeklyFitnessResponse(
-        total_steps=total_steps,
-        total_minutes=total_minutes,
-        avg_intensity=avg_intensity,
-        days_active=days_active,
-        current_streak=streak
-    )
+    return {
+        "total_steps": total_steps,
+        "total_minutes": total_minutes,
+        "avg_intensity": avg_intensity,
+        "days_active": days_active,
+        "current_streak": streak
+    }
 
 @router.get("/monthly", response_model=MonthlyFitnessResponse)
 def get_monthly_fitness(

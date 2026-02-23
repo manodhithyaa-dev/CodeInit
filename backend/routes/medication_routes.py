@@ -153,24 +153,7 @@ def mark_medication_taken(
     db.commit()
     return {"message": "Updated successfully"}
 
-@router.get("/logs")
-def get_medication_logs(
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    query = db.query(MedicationLog).filter(MedicationLog.user_id == current_user.id)
-    
-    if start_date:
-        query = query.filter(MedicationLog.taken_date >= start_date)
-    if end_date:
-        query = query.filter(MedicationLog.taken_date <= end_date)
-    
-    logs = query.order_by(MedicationLog.taken_date.desc()).all()
-    return logs
-
-@router.get("/summary", response_model=MedicationSummaryResponse)
+@router.get("/summary")
 def get_medication_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -207,10 +190,19 @@ def get_medication_summary(
             MedicationLog.taken == True
         ).all()
         
-        if len(day_logs) >= total_freq:
+        taken_counts = {}
+        for log in day_logs:
+            taken_counts[log.medication_id] = taken_counts.get(log.medication_id, 0) + 1
+        
+        all_taken = all(
+            taken_counts.get(med.id, 0) >= med.frequency_per_day
+            for med in medications
+        )
+        
+        if all_taken:
             streak += 1
             check_date -= timedelta(days=1)
         else:
             break
     
-    return MedicationSummaryResponse(current_streak=streak, weekly_adherence=weekly_adherence)
+    return {"current_streak": streak, "weekly_adherence": weekly_adherence}
