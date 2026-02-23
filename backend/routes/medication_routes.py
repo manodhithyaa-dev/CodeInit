@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from utils.auth import get_current_user
@@ -7,9 +7,10 @@ from models.medication_model import Medication
 from models.medication_log_model import MedicationLog
 from schemas.medication_schema import (
     MedicationCreate, MedicationResponse, 
-    MedicationTakenRequest, MedicationSummaryResponse
+    MedicationTakenRequest, MedicationSummaryResponse,
+    MedicationUpdate
 )
-from typing import List
+from typing import List, Optional
 from datetime import date, timedelta
 
 router = APIRouter(prefix="/medications", tags=["Medications"])
@@ -34,10 +35,89 @@ def create_medication(
 
 @router.get("", response_model=List[MedicationResponse])
 def get_medications(
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return db.query(Medication).filter(Medication.user_id == current_user.id).all()
+    query = db.query(Medication).filter(Medication.user_id == current_user.id)
+    
+    if search:
+        query = query.filter(Medication.name.ilike(f"%{search}%"))
+    
+    total = query.count()
+    offset = (page - 1) * limit
+    
+    medications = query.offset(offset).limit(limit).all()
+    return medications
+
+@router.get("/{medication_id}", response_model=MedicationResponse)
+def get_medication(
+    medication_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    medication = db.query(Medication).filter(
+        Medication.id == medication_id,
+        Medication.user_id == current_user.id
+    ).first()
+    
+    if not medication:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    
+    return medication
+
+@router.put("/{medication_id}", response_model=MedicationResponse)
+def update_medication(
+    medication_id: int,
+    medication: MedicationUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    db_medication = db.query(Medication).filter(
+        Medication.id == medication_id,
+        Medication.user_id == current_user.id
+    ).first()
+    
+    if not db_medication:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    
+    if medication.name is not None:
+        db_medication.name = medication.name
+    if medication.dosage is not None:
+        db_medication.dosage = medication.dosage
+    if medication.frequency_per_day is not None:
+        db_medication.frequency_per_day = medication.frequency_per_day
+    if medication.reminder_time is not None:
+        db_medication.reminder_time = medication.reminder_time
+    
+    db.commit()
+    db.refresh(db_medication)
+    return db_medication
+
+@router.delete("/{medication_id}")
+def delete_medication(
+    medication_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    medication = db.query(Medication).filter(
+        Medication.id == medication_id,
+        Medication.user_id == current_user.id
+    ).first()
+    
+    if not medication:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    
+    db.query(MedicationLog).filter(
+        MedicationLog.medication_id == medication_id
+    ).delete()
+    
+    db.delete(medication)
+    db.commit()
+    
+    return {"message": "Medication deleted successfully"}
 
 @router.post("/{medication_id}/taken")
 def mark_medication_taken(
@@ -52,7 +132,7 @@ def mark_medication_taken(
     ).first()
     
     if not medication:
-        return {"error": "Medication not found"}
+        raise HTTPException(status_code=404, detail="Medication not found")
     
     existing_log = db.query(MedicationLog).filter(
         MedicationLog.medication_id == medication_id,

@@ -446,3 +446,376 @@ curl -X POST http://localhost:5000/api/journal -H "Authorization: Bearer TOKEN" 
 ```bash
 curl -X GET http://localhost:5000/api/insights/weekly -H "Authorization: Bearer TOKEN"
 ```
+
+---
+
+## Pagination & Filtering
+
+All list endpoints support pagination and filtering.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| page | int | 1 | Page number |
+| limit | int | 10 | Items per page (max 100) |
+| search | string | - | Search term |
+| start_date | date | - | Filter start date |
+| end_date | date | - | Filter end date |
+
+### Example:
+```
+GET /api/journal?page=1&limit=10&search=happy&start_date=2026-01-01&end_date=2026-01-31
+```
+
+---
+
+## Stats Routes
+
+### GET /stats
+
+Get overall user statistics.
+
+**Headers:**
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+**Response (200):**
+```json
+{
+  "journal": {
+    "total_entries": 15,
+    "entries_this_week": 3
+  },
+  "medications": {
+    "total_medications": 2,
+    "doses_taken_this_week": 12,
+    "current_streak": 5
+  },
+  "fitness": {
+    "total_logs": 20,
+    "days_active_this_week": 5,
+    "total_steps_this_week": 25000,
+    "current_streak": 3
+  },
+  "user": {
+    "id": 1,
+    "name": "John",
+    "primary_goal": "MOOD"
+  }
+}
+```
+
+---
+
+## Export Routes
+
+### GET /export/journal
+
+Export journal data.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| format | string | json or csv |
+| start_date | date | Optional filter |
+| end_date | date | Optional filter |
+
+**Response (200):**
+```json
+{
+  "format": "json",
+  "count": 10,
+  "data": [...]
+}
+```
+
+### GET /export/medications
+
+Export medication data.
+
+**Response (200):**
+```json
+{
+  "format": "json",
+  "count": 2,
+  "data": [
+    {
+      "id": 1,
+      "name": "Vitamin D",
+      "dosage": "1000IU",
+      "frequency_per_day": 1,
+      "logs": [...]
+    }
+  ]
+}
+```
+
+### GET /export/fitness
+
+Export fitness data.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| format | string | json or csv |
+| start_date | date | Optional filter |
+| end_date | date | Optional filter |
+
+**Response (200):**
+```json
+{
+  "format": "json",
+  "count": 15,
+  "data": [...]
+}
+```
+
+---
+
+## User Routes
+
+### GET /users/me
+
+Get current user profile.
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "name": "John",
+  "age_range": "18-24",
+  "primary_goal": "MOOD",
+  "created_at": "2026-01-01T00:00:00"
+}
+```
+
+---
+
+### PUT /users/me
+
+Update current user profile.
+
+**Request Body:**
+```json
+{
+  "name": "John Updated",
+  "age_range": "25-34",
+  "primary_goal": "FITNESS",
+  "password": "newpassword123"
+}
+```
+
+All fields optional.
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "name": "John Updated",
+  ...
+}
+```
+
+---
+
+### DELETE /users/me
+
+Delete user account and all associated data.
+
+**Response (200):**
+```json
+{
+  "message": "Account deleted successfully"
+}
+```
+
+---
+
+## Circle Routes - Additional Endpoints
+
+### PUT /circles/{circle_id}
+
+Update circle name (owner only).
+
+**Request Body:**
+```json
+{
+  "name": "New Circle Name"
+}
+```
+
+---
+
+### POST /circles/{circle_id}/leave
+
+Leave a circle.
+
+**Response (200):**
+```json
+{
+  "message": "Left circle successfully"
+}
+```
+
+---
+
+### DELETE /circles/{circle_id}/members/{user_id}
+
+Remove a member (owner only).
+
+**Response (200):**
+```json
+{
+  "message": "Member removed successfully"
+}
+```
+
+---
+
+### GET /circles/{circle_id}/messages
+
+Get all messages in a circle.
+
+**Response (200):**
+```json
+[
+  {
+    "id": 1,
+    "circle_id": 1,
+    "sender_id": 1,
+    "receiver_id": 2,
+    "message": "Keep going!",
+    "created_at": "2026-02-23T10:00:00"
+  }
+]
+```
+
+---
+
+## Fitness Routes - Additional Endpoints
+
+### GET /fitness/monthly
+
+Get monthly fitness statistics.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| year | int | Year (default: current) |
+| month | int | Month 1-12 (default: current) |
+
+**Response (200):**
+```json
+{
+  "year": 2026,
+  "month": 2,
+  "total_steps": 150000,
+  "total_minutes": 600,
+  "days_active": 20,
+  "avg_daily_steps": 7500
+}
+```
+
+---
+
+## Journal Routes - Additional Endpoints
+
+### PUT /journal/{entry_id}
+
+Update a journal entry.
+
+**Request Body:**
+```json
+{
+  "content": "Updated content with new feelings..."
+}
+```
+
+Note: Re-analyzes sentiment automatically.
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "user_id": 1,
+  "content": "Updated content...",
+  "sentiment_score": 0.5,
+  "emotion_label": "Happy",
+  "risk_flag": false,
+  "created_at": "2026-02-23T10:00:00"
+}
+```
+
+---
+
+### DELETE /journal/{entry_id}
+
+Delete a journal entry.
+
+**Response (200):**
+```json
+{
+  "message": "Journal entry deleted successfully"
+}
+```
+
+---
+
+## Medication Routes - Additional Endpoints
+
+### PUT /medications/{medication_id}
+
+Update a medication.
+
+**Request Body:**
+```json
+{
+  "name": "Updated Name",
+  "dosage": "2000IU",
+  "frequency_per_day": 2,
+  "reminder_time": "09:00:00"
+}
+```
+
+All fields optional.
+
+---
+
+### DELETE /medications/{medication_id}
+
+Delete a medication and its logs.
+
+**Response (200):**
+```json
+{
+  "message": "Medication deleted successfully"
+}
+```
+
+---
+
+## API Summary
+
+### Total Endpoints: 42
+
+| Feature | Endpoints |
+|---------|-----------|
+| Auth | 2 |
+| Journal | 5 |
+| Medications | 6 |
+| Fitness | 7 |
+| Circles | 9 |
+| Insights | 1 |
+| User | 3 |
+| Stats | 1 |
+| Export | 3 |
+
+---
+
+## Version History
+
+- **1.0.0** - Initial release with all core features

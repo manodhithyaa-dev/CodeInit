@@ -15,6 +15,13 @@ class FitnessCreate(BaseModel):
     minutes_exercised: int = 0
     intensity: Intensity = Intensity.LOW
 
+class FitnessUpdate(BaseModel):
+    log_date: Optional[date] = None
+    activity_completed: Optional[bool] = None
+    steps: Optional[int] = None
+    minutes_exercised: Optional[int] = None
+    intensity: Optional[Intensity] = None
+
 class FitnessResponse(BaseModel):
     id: int
     user_id: int
@@ -33,3 +40,11 @@ class WeeklyFitnessResponse(BaseModel):
     avg_intensity: str
     days_active: int
     current_streak: int
+
+class MonthlyFitnessResponse(BaseModel):
+    year: int
+    month: int
+    total_steps: int
+    total_minutes: int
+    days_active: int
+    avg_daily_steps: float

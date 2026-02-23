@@ -5,6 +5,9 @@ from typing import List, Optional
 class CircleCreate(BaseModel):
     name: str
 
+class CircleUpdate(BaseModel):
+    name: Optional[str] = None
+
 class CircleResponse(BaseModel):
     id: int
     name: str

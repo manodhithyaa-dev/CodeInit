@@ -6,6 +6,9 @@ from typing import Optional
 class JournalCreate(BaseModel):
     content: str
 
+class JournalUpdate(BaseModel):
+    content: Optional[str] = None
+
 class JournalResponse(BaseModel):
     id: int
     user_id: int

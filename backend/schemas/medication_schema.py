@@ -8,6 +8,12 @@ class MedicationCreate(BaseModel):
     frequency_per_day: int = 1
     reminder_time: Optional[time] = None
 
+class MedicationUpdate(BaseModel):
+    name: Optional[str] = None
+    dosage: Optional[str] = None
+    frequency_per_day: Optional[int] = None
+    reminder_time: Optional[time] = None
+
 class MedicationResponse(BaseModel):
     id: int
     user_id: int

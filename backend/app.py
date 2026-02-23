@@ -17,6 +17,9 @@ from routes import medication_routes
 from routes import fitness_routes
 from routes import circle_routes
 from routes import insights_routes
+from routes import user_routes
+from routes import stats_routes
+from routes import export_routes
 
 app = FastAPI(
     title="MindMesh API",
@@ -41,6 +44,9 @@ app.include_router(medication_routes.router, prefix="/api")
 app.include_router(fitness_routes.router, prefix="/api")
 app.include_router(circle_routes.router, prefix="/api")
 app.include_router(insights_routes.router, prefix="/api")
+app.include_router(user_routes.router, prefix="/api")
+app.include_router(stats_routes.router, prefix="/api")
+app.include_router(export_routes.router, prefix="/api")
 
 @app.get("/")
 def root():
